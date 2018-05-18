@@ -39,24 +39,24 @@ public class SampleProducer extends Thread {
 	public void run() {
 		int messageNo = 1;
 		while (true) {
-			String messageStr = "Message_" + messageNo;
 			long startTime = System.currentTimeMillis();
 			try {
 				sleep(this.interval);
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
 			}
+			Client client = ClientBuilder.newClient();
+			WebTarget target = client.target("https://blockchain.info/de/ticker");
+			Response response = target.request(MediaType.APPLICATION_JSON).get();
+			String charts = response.readEntity(String.class);
+
 			if (isAsync) { // Send asynchronously
-				Client client = ClientBuilder.newClient();
-				WebTarget target = client.target("https://blockchain.info/de/ticker");
-				Response response = target.request(MediaType.APPLICATION_JSON).get();
-				String message = response.readEntity(String.class);
-				producer.send(new ProducerRecord<>(topic, messageNo, message),
-						new DemoCallBack(startTime, messageNo, message));
+				producer.send(new ProducerRecord<>(topic, messageNo, charts),
+						new DemoCallBack(startTime, messageNo, charts));
 			} else { // Send synchronously
 				try {
-					producer.send(new ProducerRecord<>(topic, messageNo, messageStr)).get();
-					System.out.println("Sent message: (" + messageNo + ", " + messageStr + ")");
+					producer.send(new ProducerRecord<>(topic, messageNo, charts)).get();
+					System.out.println("Sent message: (" + messageNo + ", " + charts + ")");
 				} catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
 					// handle the exception
